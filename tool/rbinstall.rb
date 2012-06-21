@@ -560,7 +560,7 @@ module Gem
     def self.load(path)
       src = File.open(path, "rb") {|f| f.read}
       src.sub!(/\A#.*/, '')
-      eval(src, nil, path)
+      eval(src, nil, path).tap {|spec| spec.loaded_from = path}
     end
 
     def to_ruby
@@ -729,12 +729,16 @@ install?(:ext, :comm, :gem) do
       specgen.spec_source
     end
 
-    unless gemspec.executables.empty? then
-      bin_dir = File.join(gem_dir, 'gems', full_name, 'bin')
-      makedirs(bin_dir)
+    if !gemspec.loaded_from.nil?
+      install_recursive File.join(File.dirname(gemspec.loaded_from), gemspec.name), File.join(gem_dir, 'gems', full_name)
+    else
+      unless gemspec.executables.empty? then
+        bin_dir = File.join(gem_dir, 'gems', full_name, 'bin')
+        makedirs(bin_dir)
 
-      execs = gemspec.executables.map {|exec| File.join(srcdir, 'bin', exec)}
-      install(execs, bin_dir, :mode => $prog_mode)
+        execs = gemspec.executables.map {|exec| File.join(srcdir, 'bin', exec)}
+        install(execs, bin_dir, :mode => $prog_mode)
+      end
     end
   end
 end
