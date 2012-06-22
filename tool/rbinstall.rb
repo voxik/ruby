@@ -713,7 +713,7 @@ install?(:ext, :comm, :gem) do
     gems[name] ||= specgen
   end
 
-  Dir.glob(srcdir+"/{lib,ext}/**/*.gemspec").each do |src|
+  Dir.glob(srcdir+"/{lib,ext,gems}/**/*.gemspec").each do |src|
     specgen   = RbInstall::Specs::Reader.new(src)
     gems[specgen.gemspec.name] ||= specgen
   end
