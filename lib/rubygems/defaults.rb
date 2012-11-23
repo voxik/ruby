@@ -58,6 +58,13 @@ module Gem
   end
 
   ##
+  # Path to stdlib gems
+
+  def self.stdlib_gems_dir
+    File.join(ConfigMap[:rubylibdir], 'gems')
+  end
+
+  ##
   # Default gem load path
 
   def self.default_path
@@ -65,7 +72,7 @@ module Gem
       [user_dir, default_dir]
     else
       [default_dir]
-    end
+    end << stdlib_gems_dir
   end
 
   ##
