@@ -610,7 +610,7 @@ end
 install?(:ext, :comm, :gem) do
   $:.unshift(File.join(srcdir, "lib"))
   require("rubygems.rb")
-  gem_dir = Gem.default_dir
+  gem_dir = Gem.stdlib_gems_dir
   directories = Gem.ensure_gem_subdirectories(gem_dir)
   prepare "default gems", gem_dir, directories
 
