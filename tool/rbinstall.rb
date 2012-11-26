@@ -545,25 +545,28 @@ install?(:local, :comm, :man) do
 end
 
 # :stopdoc:
-module Gem
-  if defined?(Specification)
-    remove_const(:Specification)
-  end
 
-  class Specification < OpenStruct
-    def initialize(*)
-      super
-      yield(self) if defined?(yield)
-      self.executables ||= []
-    end
-
-    def self.load(path)
-      src = File.open(path, "rb") {|f| f.read}
-      src.sub!(/\A#.*/, '')
-      eval(src, nil, path)
-    end
-  end
-end
+# TODO: What is the reason? Proposed to drop:
+# https://bugs.ruby-lang.org/issues/7439
+#module Gem
+#  if defined?(Specification)
+#    remove_const(:Specification)
+#  end
+#
+#  class Specification < OpenStruct
+#    def initialize(*)
+#      super
+#      yield(self) if defined?(yield)
+#      self.executables ||= []
+#    end
+#
+#    def self.load(path)
+#      src = File.open(path, "rb") {|f| f.read}
+#      src.sub!(/\A#.*/, '')
+#      eval(src, nil, path)
+#    end
+#  end
+#end
 
 module RbInstall
   module Specs
@@ -652,6 +655,43 @@ install?(:ext, :comm, :gem) do
 
       execs = gemspec.executables.map {|exec| File.join(srcdir, 'bin', exec)}
       install(execs, bin_dir, :mode => $prog_mode)
+    end
+  end
+
+  Dir[File.join(srcdir, 'gems', '**', '*.gemspec')].each do |gemspec_file_name|
+    src_gem_dir = File.dirname(gemspec_file_name)
+
+    # Let the gemspec glob correct files.
+    gemspec = Dir.chdir src_gem_dir do
+      Gem::Specification.load gemspec_file_name
+    end
+
+    puts "#{" "*30}#{gemspec.name} #{gemspec.version}"
+
+    gem_dir = File.join(gem_dir, "gems", gemspec.full_name.untaint)
+
+    makedirs(gem_dir)
+
+    gemspec.files.each do |f|
+      src = File.join(src_gem_dir, f)
+      dest = File.join(gem_dir, f)
+
+      makedirs File.dirname(dest)
+
+      install src, dest
+    end
+
+    # Install gem executables.
+    # TODO: Would be nice to use RubyGems stubs instead.
+    gemspec.executables.each do |filename|
+      filename.untaint
+
+      ln_sf(File.join(gem_dir, gemspec.bindir, filename), File.join(bindir, filename))
+    end
+
+    # Save the .gemspec file.
+    open_for_install(File.join(spec_dir, File.basename(gemspec.spec_file.untaint)), $data_mode) do
+      gemspec.to_ruby_for_cache
     end
   end
 end
